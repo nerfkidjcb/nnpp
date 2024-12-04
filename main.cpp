@@ -2,11 +2,12 @@
 #include <vector>
 #include <random>
 #include "ShallowNeuralNetwork.h"
+#include "DeepNeuralNetwork.h"
 #include "DataSetHandler.h"
 #include "DataSetGenerator.h"
 
 int main() {
-    DataSetGenerator generator(4, 1, 1000); // Input size, output size, number of examples. 4 inputs is basically as good as we get here
+    DataSetGenerator generator(6, 1, 1000); // Input size, output size, number of examples. 4 inputs is basically as good as we get here
 
     // Define a function to generate polynomial sequences
     auto func = [](double x) { return x * 3 + 2; }; // mx + c is what this shallow guy is pretty ok at
@@ -37,10 +38,15 @@ int main() {
     dataSetHandler.printSplitSizes();
 
     // Create a neural network instance
-    ShallowNeuralNetwork nn(inputs[0].size(), 100, targets[0].size());  // Input size, hidden size, output size
+    // ShallowNeuralNetwork nn(inputs[0].size(), 100, targets[0].size());  // Input size, hidden size, output size
+    DeepNeuralNetwork nn(inputs[0].size(), {5, 10, 5}, targets[0].size());  // Input size, hidden sizes, output size
+
+    
+    // TODO get the dnn working, and then create multithreaded methods for training and feedforward. 
+    // also will need better gd methods as we are gonna start finding local minima (i think, i cant picture ND space) with the dnn
 
     // Train the neural network using the training data
-    nn.train(dataSetHandler.getTrainInputs(), dataSetHandler.getTrainTargets(), 100, 0.001);
+    nn.train(dataSetHandler.getTrainInputs(), dataSetHandler.getTrainTargets(), 100, 0.0001);
 
     // After training, test the network on the validation set
     std::vector<std::vector<double>> valInputs = dataSetHandler.getValInputs();
@@ -51,7 +57,7 @@ int main() {
 
     for (int i = 0; i < numValidationSamples; ++i) {
         // Feedforward pass for each validation input
-        FeedforwardResult result = nn.feedforward(valInputs[i]);  // Get both hidden and output activations
+        DeepFeedforwardResult result = nn.feedforward(valInputs[i]);  // Get both hidden and output activations
         std::vector<double> output = result.output;  // Extract output activations
 
         float error = 0.0;
@@ -73,7 +79,7 @@ int main() {
     // Show some example predictions vs. actual targets
     std::cout << "Example predictions vs. actual targets:" << std::endl;
     for (int i = 0; i < 5; ++i) {
-        FeedforwardResult result = nn.feedforward(valInputs[i]);  // Feedforward pass
+        DeepFeedforwardResult result = nn.feedforward(valInputs[i]);  // Feedforward pass
         std::vector<double> output = result.output;  // Extract output activations
 
         std::cout << "Prediction: " << output[0] << ", Target: " << valTargets[i][0] << std::endl;
