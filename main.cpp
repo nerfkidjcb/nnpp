@@ -43,7 +43,7 @@ int main() {
     DeepNeuralNetwork nn(inputs[0].size(), {5, 10, 5}, targets[0].size(), false);  // Input size, hidden sizes, output size, useMultithreading
 
     
-    // TODO get the dnn working, and then create multithreaded methods for training and feedforward. 
+    // TODO get the dnn working, and then create multithreaded methods for back prop 
     // also will need better gd methods as we are gonna start finding local minima (i think, i cant picture ND space) with the dnn
 
     // Train the neural network using the training data

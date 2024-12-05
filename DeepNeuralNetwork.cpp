@@ -90,8 +90,9 @@ double DeepNeuralNetwork::leakyReluDerivative(double x) {
 }
 
 // Multithreaded feedforward method for hidden layer activations
+
 DeepFeedforwardResult DeepNeuralNetwork::feedforwardMultithreaded(const std::vector<double>& input) {
-    // This is an incredibly dumb implementation as we create a bunch of threads so the OS steps in for context switching and (atm) our network is tiny
+    // This vector holds the activations of the hidden layers
     std::vector<std::vector<double>> hiddenActivations(hiddenSizes.size());
     std::vector<double> output(outputSize, 0.0);
     
@@ -101,21 +102,36 @@ DeepFeedforwardResult DeepNeuralNetwork::feedforwardMultithreaded(const std::vec
     // Loop over each layer
     for (size_t layer = 0; layer < hiddenSizes.size(); ++layer) {
         std::vector<double> hidden(hiddenSizes[layer], 0.0);
+
+        // Number of threads we want (24)
+        size_t numThreads = 24;
+
+        // Calculate the number of neurons each thread will handle
+        size_t neuronsPerThread = (hiddenSizes[layer] + numThreads - 1) / numThreads;
+
+        // Create a vector to hold the threads
         std::vector<std::thread> threads;
 
-        // Compute each hidden unit in parallel
-        for (int i = 0; i < hiddenSizes[layer]; ++i) {
-            threads.push_back(std::thread([&, i]() {
-                hidden[i] = 0.0;
-                for (size_t j = 0; j < inputToHidden.size(); ++j) {
-                    hidden[i] += inputToHidden[j] * weights[layer][j][i];
+        // Launch threads
+        for (size_t t = 0; t < numThreads; ++t) {
+            threads.push_back(std::thread([&, t]() {
+                // Each thread computes a chunk of neurons
+                size_t startIdx = t * neuronsPerThread;
+                size_t endIdx = (startIdx + neuronsPerThread < hiddenSizes[layer]) ? (startIdx + neuronsPerThread) : hiddenSizes[layer];                
+
+                // Perform the calculation for this chunk of neurons
+                for (size_t i = startIdx; i < endIdx; ++i) {
+                    hidden[i] = 0.0;
+                    for (size_t j = 0; j < inputToHidden.size(); ++j) {
+                        hidden[i] += inputToHidden[j] * weights[layer][j][i];
+                    }
+                    hidden[i] += biases[layer][i];
+                    hidden[i] = relu(hidden[i]); // Apply ReLU activation
                 }
-                hidden[i] += biases[layer][i];
-                hidden[i] = relu(hidden[i]); // Apply ReLU activation for now
             }));
         }
 
-        // Join all threads after computing hidden units
+        // Join all threads after they complete their work
         for (auto& t : threads) {
             t.join();
         }
@@ -124,7 +140,7 @@ DeepFeedforwardResult DeepNeuralNetwork::feedforwardMultithreaded(const std::vec
         inputToHidden = hidden; // Set input to the current hidden layer's output
     }
 
-    // Hidden to output layer
+    // Hidden to output layer (sequential, since output size is often small)
     for (int i = 0; i < outputSize; ++i) {
         for (int j = 0; j < hiddenSizes.back(); ++j) {
             output[i] += inputToHidden[j] * weights[hiddenSizes.size()][j][i];
