@@ -2,10 +2,12 @@
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
+#include <vector>
+#include <thread>
 
 // Constructor to initialize the network
-DeepNeuralNetwork::DeepNeuralNetwork(int inputSize, std::vector<int> hiddenSizes, int outputSize)
-    : inputSize(inputSize), hiddenSizes(hiddenSizes), outputSize(outputSize) {
+DeepNeuralNetwork::DeepNeuralNetwork(int inputSize, std::vector<int> hiddenSizes, int outputSize, bool useMultithreading)
+    : inputSize(inputSize), hiddenSizes(hiddenSizes), outputSize(outputSize), useMultithreading(useMultithreading) {
     initializeWeights();
 }
 
@@ -54,6 +56,11 @@ void DeepNeuralNetwork::initializeWeights() {
     //         std::cout << std::endl;
     //     }
     // }
+}
+
+// Multithreaded feedforward to get activations for all layers
+DeepFeedforwardResult DeepNeuralNetwork::feedforwardMultithreaded(const std::vector<double>& input) {
+    return feedforward(input); // but faster, eventually
 }
 
 // Sigmoid activation function
@@ -129,10 +136,19 @@ void DeepNeuralNetwork::train(const std::vector<std::vector<double>>& inputs, co
         for (int i = 0; i < numExamples; ++i) {
             const std::vector<double>& input = inputs[i];
             const std::vector<double>& target = targets[i];
-
-            DeepFeedforwardResult result = feedforward(input);
+        
+            DeepFeedforwardResult result;
+            
+            if (useMultithreading) {  
+                result = feedforwardMultithreaded(input); // seg faults yay
+            } else {
+                result = feedforward(input);
+            }
+            
+            // Extract hiddenActivations and output references from the result
             std::vector<std::vector<double>>& hiddenActivations = result.hidden;
             std::vector<double>& output = result.output;
+
 
             double loss = 0.0; // Mean Squared Error
             for (int j = 0; j < outputSize; ++j) {

@@ -15,16 +15,18 @@ struct DeepFeedforwardResult {
 class DeepNeuralNetwork {
 public:
     // Constructor to initialize the network
-    DeepNeuralNetwork(int inputSize, std::vector<int> hiddenSizes, int outputSize);
+    DeepNeuralNetwork(int inputSize, std::vector<int> hiddenSizes, int outputSize, bool useMultithreading = true);
 
     // Public methods
     DeepFeedforwardResult feedforward(const std::vector<double>& input);  // Now returns both hidden and output activations
+    DeepFeedforwardResult feedforwardMultithreaded(const std::vector<double>& input);
     void train(const std::vector<std::vector<double>>& inputs, const std::vector<std::vector<double>>& targets, int epochs, double learningRate);
 
 private:
     // Network parameters
     int inputSize, outputSize;
     std::vector<int> hiddenSizes;
+    bool useMultithreading = true;
 
     // Weights and biases
     std::vector<std::vector<std::vector<double>>> weights;

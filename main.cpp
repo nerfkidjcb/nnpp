@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <chrono>
 #include "ShallowNeuralNetwork.h"
 #include "DeepNeuralNetwork.h"
 #include "DataSetHandler.h"
@@ -39,14 +40,20 @@ int main() {
 
     // Create a neural network instance
     // ShallowNeuralNetwork nn(inputs[0].size(), 100, targets[0].size());  // Input size, hidden size, output size
-    DeepNeuralNetwork nn(inputs[0].size(), {5, 10, 5}, targets[0].size());  // Input size, hidden sizes, output size
+    DeepNeuralNetwork nn(inputs[0].size(), {5, 10, 5}, targets[0].size(), true);  // Input size, hidden sizes, output size, useMultithreading
 
     
     // TODO get the dnn working, and then create multithreaded methods for training and feedforward. 
     // also will need better gd methods as we are gonna start finding local minima (i think, i cant picture ND space) with the dnn
 
     // Train the neural network using the training data
+    auto start = std::chrono::high_resolution_clock::now();
+
     nn.train(dataSetHandler.getTrainInputs(), dataSetHandler.getTrainTargets(), 100, 0.0001);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    std::cout << "Training time: " << diff.count() << " s" << std::endl; // See what multithreading does to this
 
     // After training, test the network on the validation set
     std::vector<std::vector<double>> valInputs = dataSetHandler.getValInputs();
@@ -57,7 +64,8 @@ int main() {
 
     for (int i = 0; i < numValidationSamples; ++i) {
         // Feedforward pass for each validation input
-        DeepFeedforwardResult result = nn.feedforward(valInputs[i]);  // Get both hidden and output activations
+        DeepFeedforwardResult result = nn.feedforward(valInputs[i]);  // Get both hidden and output activations (for DeepNN)
+        // FeedforwardResult result = nn.feedforward(valInputs[i]);  // Get both hidden and output activations (for ShallowNN)
         std::vector<double> output = result.output;  // Extract output activations
 
         float error = 0.0;
@@ -79,7 +87,8 @@ int main() {
     // Show some example predictions vs. actual targets
     std::cout << "Example predictions vs. actual targets:" << std::endl;
     for (int i = 0; i < 5; ++i) {
-        DeepFeedforwardResult result = nn.feedforward(valInputs[i]);  // Feedforward pass
+        DeepFeedforwardResult result = nn.feedforward(valInputs[i]);  // Feedforward pass (for DeepNN)
+        // FeedforwardResult result = nn.feedforward(valInputs[i]);  // Feedforward pass (for ShallowNN)
         std::vector<double> output = result.output;  // Extract output activations
 
         std::cout << "Prediction: " << output[0] << ", Target: " << valTargets[i][0] << std::endl;
