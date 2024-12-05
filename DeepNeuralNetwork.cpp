@@ -58,10 +58,6 @@ void DeepNeuralNetwork::initializeWeights() {
     // }
 }
 
-// Multithreaded feedforward to get activations for all layers
-DeepFeedforwardResult DeepNeuralNetwork::feedforwardMultithreaded(const std::vector<double>& input) {
-    return feedforward(input); // but faster, eventually
-}
 
 // Sigmoid activation function
 double DeepNeuralNetwork::sigmoid(double x) {
@@ -91,6 +87,53 @@ double DeepNeuralNetwork::leakyRelu(double x) {
 // Derivative of Leaky ReLU activation function
 double DeepNeuralNetwork::leakyReluDerivative(double x) {
     return (x > 0) ? 1.0 : 0.01;
+}
+
+// Multithreaded feedforward method for hidden layer activations
+DeepFeedforwardResult DeepNeuralNetwork::feedforwardMultithreaded(const std::vector<double>& input) {
+    // This is an incredibly dumb implementation as we create a bunch of threads so the OS steps in for context switching and (atm) our network is tiny
+    std::vector<std::vector<double>> hiddenActivations(hiddenSizes.size());
+    std::vector<double> output(outputSize, 0.0);
+    
+    // Input to the first hidden layer (and then passed sequentially to each subsequent hidden layer)
+    std::vector<double> inputToHidden = input;
+
+    // Loop over each layer
+    for (size_t layer = 0; layer < hiddenSizes.size(); ++layer) {
+        std::vector<double> hidden(hiddenSizes[layer], 0.0);
+        std::vector<std::thread> threads;
+
+        // Compute each hidden unit in parallel
+        for (int i = 0; i < hiddenSizes[layer]; ++i) {
+            threads.push_back(std::thread([&, i]() {
+                hidden[i] = 0.0;
+                for (size_t j = 0; j < inputToHidden.size(); ++j) {
+                    hidden[i] += inputToHidden[j] * weights[layer][j][i];
+                }
+                hidden[i] += biases[layer][i];
+                hidden[i] = relu(hidden[i]); // Apply ReLU activation for now
+            }));
+        }
+
+        // Join all threads after computing hidden units
+        for (auto& t : threads) {
+            t.join();
+        }
+
+        hiddenActivations[layer] = hidden;
+        inputToHidden = hidden; // Set input to the current hidden layer's output
+    }
+
+    // Hidden to output layer
+    for (int i = 0; i < outputSize; ++i) {
+        for (int j = 0; j < hiddenSizes.back(); ++j) {
+            output[i] += inputToHidden[j] * weights[hiddenSizes.size()][j][i];
+        }
+        output[i] += biases[hiddenSizes.size()][i];
+    }
+
+    DeepFeedforwardResult result = {hiddenActivations, output};
+    return result;
 }
 
 // Feedforward to get activations for all layers

@@ -8,7 +8,7 @@
 #include "DataSetGenerator.h"
 
 int main() {
-    DataSetGenerator generator(6, 1, 1000); // Input size, output size, number of examples. 4 inputs is basically as good as we get here
+    DataSetGenerator generator(6, 1, 1000); // Input size, output size, number of examples. 4 inputs is basically as good as we get here for shallow
 
     // Define a function to generate polynomial sequences
     auto func = [](double x) { return x * 3 + 2; }; // mx + c is what this shallow guy is pretty ok at
@@ -40,7 +40,7 @@ int main() {
 
     // Create a neural network instance
     // ShallowNeuralNetwork nn(inputs[0].size(), 100, targets[0].size());  // Input size, hidden size, output size
-    DeepNeuralNetwork nn(inputs[0].size(), {5, 10, 5}, targets[0].size(), true);  // Input size, hidden sizes, output size, useMultithreading
+    DeepNeuralNetwork nn(inputs[0].size(), {5, 10, 5}, targets[0].size(), false);  // Input size, hidden sizes, output size, useMultithreading
 
     
     // TODO get the dnn working, and then create multithreaded methods for training and feedforward. 
